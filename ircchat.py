@@ -10,6 +10,8 @@ from colorama import Fore, Back, Style
 import colorama
 from plyer import notification
 import winsound
+import requests
+import os
 
 def play_notification_sound():
     winsound.Beep(1000, 500) 
@@ -17,15 +19,57 @@ def play_notification_sound():
 colorama.init(autoreset=True)
 # Firebase yapılandırması
 config = {
-    "apiKey": "AIzaSyA9GxDxvPwuiis3__BbWPRVR0ZLzfGk1s4",
-    "authDomain": "ircchat-1b52a.firebaseapp.com",
-    "databaseURL": "https://ircchat-1b52a-default-rtdb.europe-west1.firebasedatabase.app/",
-    "storageBucket": "ircchat-1b52a.appspot.com"
+    "apiKey": "",
+    "authDomain": "",
+    "databaseURL": "",
+    "storageBucket": ""
 }
-
+CURRENT_VERSION = "v1.1"
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
+def check_for_updates():
+    update_info = db.child("updates").get().val()
 
+    if update_info:
+        latest_version = update_info.get("latest_version")
+        file_url = update_info.get("file_url")
+        libraryup = update_info.get("libraryupd")
+        libss = update_info.get("libs")
+        if libraryup:
+            print("Yeni kütüphaneler yükleniyor...")
+            # libs, 'lib1', 'lib2', ... gibi key-value çiftlerinden oluşuyor
+            for lib_key, lib_name in libss.items():
+                print(f"Yükleniyor: {lib_name}")
+                os.system(f"pip install {lib_name}")
+        if latest_version and file_url and latest_version != CURRENT_VERSION:
+            print(f"🚀 Yeni sürüm mevcut! ({latest_version}) Güncelleniyor...")
+            download_update(file_url)
+        else:
+            print("✅ Yazılım güncel.")
+def download_update(url):
+    response = requests.get(url, allow_redirects=True)
+
+    if response.status_code == 200:
+        temp_file = "ircchat_new.py"  # Geçici yeni dosya adı
+        with open(temp_file, "wb") as file:
+            file.write(response.content)
+        
+        print("✅ Güncelleme tamamlandı! Dosyalar yenileniyor...")
+
+        # Eski dosyayı sil
+        try:
+            os.remove("ircchat.py")
+        except FileNotFoundError:
+            print("❌ Önceki dosya bulunamadı, yeni dosya eklenecek.")
+
+        # Yeni dosyayı doğru isimle kaydet
+        os.rename(temp_file, "ircchat.py")
+
+        print("🔄 Uygulama yeniden başlatılıyor...")
+        os.system("python ircchat.py")
+        exit()
+    else:
+        print("❌ Güncelleme başarısız oldu!")
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -178,6 +222,7 @@ def check_ban_status(username, channel_name):
             threading.Thread(target=listen_messages, args=(channel_name,), daemon=True).start()
 
 if __name__ == "__main__":
+    check_for_updates()
     username, session_id, isAdmin = login()
     
     
