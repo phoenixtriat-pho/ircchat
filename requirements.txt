@@ -1,0 +1,9 @@
+setuptools
+# `gcloud` is included as in depend.bat (legacy package name)
+gcloud
+pycryptodome
+pycryptodomex
+pyrebase4
+colorama
+plyer
+requests
